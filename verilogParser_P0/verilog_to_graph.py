@@ -2,6 +2,7 @@ import argparse
 import re
 import networkx as nx
 import matplotlib.pyplot as plt
+import pickle
 
 # You may need to install pydot and graphviz for the layout
 # pip install pydot
@@ -137,7 +138,9 @@ def main():
         # Save the graph object if requested
         if args.save_graph:
             try:
-                nx.write_gpickle(circuit_graph, args.save_graph)
+                path = args.save_graph
+                with open(path, 'wb') as f:
+                    pickle.dump(circuit_graph, f)
                 print(f"💾 NetworkX graph object saved to: {args.save_graph}")
             except Exception as e:
                 print(f"Could not save graph object: {e}")
