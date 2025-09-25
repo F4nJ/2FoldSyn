@@ -23,7 +23,8 @@ GATE_INSTANCE_PATTERN = r"\s*\b(and|or|not|nand|nor|xor|xnor)\b\s+(\w+)\s*\(([^;
 
 def create_graph_from_verilog(file_path):
     """
-    Parses a simple Verilog netlist file and converts it into a NetworkX DiGraph.
+    Parses a simple Verilog netlist file and converts it into a NetworkX DiGraph
+    where gates, PIs, POs, and wires are all nodes.
     """
     try:
         with open(file_path, 'r') as f:
@@ -76,10 +77,38 @@ def create_graph_from_verilog(file_path):
 
     return G
 
+# --- NEW FUNCTION ---
+def collapse_wire_nodes(G):
+    """
+    Transforms the graph by removing wire nodes and creating direct edges
+    from source nodes to sink nodes.
+    """
+    # Create a list of wire nodes to iterate over, as we'll be modifying the graph
+    wire_nodes = [n for n, d in G.nodes(data=True) if d.get('type') == 'wire']
+
+    for wire_node in wire_nodes:
+        # A wire should have one predecessor (the driver)
+        predecessors = list(G.predecessors(wire_node))
+        # A wire can have multiple successors (the sinks)
+        successors = list(G.successors(wire_node))
+
+        if not predecessors:
+            print(f"Warning: Wire '{wire_node}' has no driver. Skipping.")
+            continue
+        
+        source_node = predecessors[0]
+
+        # For every sink, create a direct edge from the source
+        for sink_node in successors:
+            G.add_edge(source_node, sink_node)
+
+    # After creating all new edges, remove the wire nodes
+    G.remove_nodes_from(wire_nodes)
+    return G
+
 def visualize_graph(graph, file_name, output_image_path=None):
     """
     Creates a visualization of the circuit graph.
-    Saves it to a file if a path is provided, otherwise displays it.
     """
     plt.figure(figsize=(15, 10))
     plt.title(f"Circuit Graph for {file_name}", size=15)
@@ -98,7 +127,6 @@ def visualize_graph(graph, file_name, output_image_path=None):
     gate_labels = {n: d['func'] for n, d in graph.nodes(data=True) if d.get('type') == 'gate'}
     nx.draw_networkx_labels(graph, pos, labels=gate_labels, font_color='black', font_size=7)
 
-    # Save to file or show interactively
     if output_image_path:
         try:
             plt.savefig(output_image_path, dpi=300, bbox_inches='tight')
@@ -113,7 +141,7 @@ def main():
     Main function to handle command-line arguments and run the script.
     """
     parser = argparse.ArgumentParser(
-        description="Convert a simple Verilog netlist into a NetworkX graph."
+        description="Convert a Verilog netlist into a NetworkX graph."
     )
     parser.add_argument("verilog_file", help="Path to the input Verilog file.")
     parser.add_argument(
@@ -122,7 +150,13 @@ def main():
     )
     parser.add_argument(
         "-s", "--save_graph",
-        help="Path to save the NetworkX graph object as a file (e.g., 'circuit.gpickle')."
+        help="Path to save the NetworkX graph object (e.g., 'circuit.gpickle')."
+    )
+    # --- NEW ARGUMENT ---
+    parser.add_argument(
+        "--collapse-wires",
+        action="store_true",
+        help="Collapse wire nodes into direct edges from source to sink gates."
     )
     args = parser.parse_args()
 
@@ -130,16 +164,20 @@ def main():
 
     if circuit_graph:
         print("✅ Verilog file parsed successfully!")
+        
+        # --- NEW LOGIC ---
+        # If the flag is set, transform the graph
+        if args.collapse_wires:
+            print("🔧 Collapsing wire nodes into direct edges...")
+            circuit_graph = collapse_wire_nodes(circuit_graph)
+
         print(f"📊 Graph contains {circuit_graph.number_of_nodes()} nodes and {circuit_graph.number_of_edges()} edges.")
         
-        # Visualize the graph (either save or show)
         visualize_graph(circuit_graph, args.verilog_file, args.output_image)
         
-        # Save the graph object if requested
         if args.save_graph:
             try:
-                path = args.save_graph
-                with open(path, 'wb') as f:
+                with open(args.save_graph, 'wb') as f:
                     pickle.dump(circuit_graph, f)
                 print(f"💾 NetworkX graph object saved to: {args.save_graph}")
             except Exception as e:
