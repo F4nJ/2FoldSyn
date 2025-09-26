@@ -55,7 +55,9 @@ python verilog_to_graph.py <VERILOG_FILE> [OPTIONS]
   * `verilog_file`: **(Required)** The path to the input Verilog file.
   * `-o, --output_image <FILENAME>`: **(Optional)** Saves the graph visualization to the specified image file.
   * `-s, --save_graph <FILENAME>`: **(Optional)** Saves the NetworkX graph object to the specified file (e.g., `circuit.pkl`).
-  * `--collapse-wires`: **(Optional Flag)** Collapses wire nodes into direct edges from source to sink.
+  * `--collapse-wires`: **(Optional Flag)** Collapses wire nodes into direct edges from source to sink. This is the default situation.
+  * `--expand-wires`: **(Optional Flag)** Expands wire nodes into a node between source and sink.
+
 
 ### Examples
 
@@ -93,6 +95,12 @@ endmodule
     python verilog_to_graph.py example.v --collapse-wires -o collapsed_graph.png
     ```
 
+3.  **Generate and save the compact graph by expanding wires**:
+
+    ```bash
+    python verilog_to_graph.py example.v --expand-wires -o expand_graph.png
+    ```
+
 4.  **Save the graph object**:
 
     ```bash
@@ -105,14 +113,14 @@ endmodule
 
 The script can generate two types of graphs depending on your analysis needs.
 
-### Method 1: Wires as Nodes (Default)
+### Method 1: Wires as Nodes (`--expand-wires`)
 
 This method creates a graph that explicitly represents every element from the Verilog file. Wires are treated as their own nodes.
 
 **Pros**: High fidelity to the original netlist; easy to analyze properties like fan-out.
 **Cons**: Results in a larger, more complex graph; logical paths between gates are indirect.
 
-### Method 2: Wires as Edges (`--collapse-wires`)
+### Method 2: Wires as Edges (`--collapse-wires` or default)
 
 This method abstracts away the wires, creating direct edges from a source gate to all of its sink gates.
 
@@ -141,7 +149,7 @@ print(f"Loaded graph with {G.number_of_nodes()} nodes.")
 
 ## Node Attributes in the Graph 🏷️
 
-Each node has attributes describing what it represents. **Note**: `wire` nodes will not exist if you use the `--collapse-wires` flag.
+Each node has attributes describing what it represents. **Note**: `wire` nodes onlt exist if you use the `--expand-wires` flag.
 
   * **Gate Nodes**: `type: 'gate'`, `func: 'and'` (or `'or'`, `'not'`, etc.)
   * **Signal Nodes**:

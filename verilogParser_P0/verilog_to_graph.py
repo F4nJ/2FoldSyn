@@ -19,7 +19,7 @@ except ImportError:
 INPUT_PATTERN = r"input\s+([^;]+);"
 OUTPUT_PATTERN = r"output\s+([^;]+);"
 WIRE_PATTERN = r"wire\s+([^;]+);"
-GATE_INSTANCE_PATTERN = r"\s*\b(and|or|not|nand|nor|xor|xnor)\b\s+(\w+)\s*\(([^;]+)\);"
+GATE_INSTANCE_PATTERN = r"\s*\b(and|or|not|nand|nor|xor|xnor|buf)\b\s+(\w+)\s*\(([^;]+)\);"
 
 def create_graph_from_verilog(file_path):
     """
@@ -158,6 +158,11 @@ def main():
         action="store_true",
         help="Collapse wire nodes into direct edges from source to sink gates."
     )
+    parser.add_argument(
+        "--expand-wires",
+        action="store_true",
+        help="Expand wire nodes into direct edges from source to sink gates."
+    )
     args = parser.parse_args()
 
     circuit_graph = create_graph_from_verilog(args.verilog_file)
@@ -168,6 +173,11 @@ def main():
         # --- NEW LOGIC ---
         # If the flag is set, transform the graph
         if args.collapse_wires:
+            print("🔧 Collapsing wire nodes into direct edges...")
+            circuit_graph = collapse_wire_nodes(circuit_graph)
+        elif args.expand_wires:
+            circuit_graph = circuit_graph
+        else:
             print("🔧 Collapsing wire nodes into direct edges...")
             circuit_graph = collapse_wire_nodes(circuit_graph)
 
