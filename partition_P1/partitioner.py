@@ -169,8 +169,10 @@ def hybrid_partitioner(
     # This is a greedy approach. It repeatedly finds the best node to move
     # based on a cost function that considers both cut size and I/O balance.
     node_to_partition = {node: i for i, p in enumerate(partitions) for node in p}
-    
-    for iteration in range(num_nodes): # Failsafe to prevent infinite loops
+
+    # Failsafe: Limit the number of I/O balancing iterations. One pass per node is a reasonable upper bound.
+    MAX_IO_BALANCE_ITERATIONS = graph.number_of_nodes()
+    for iteration in range(MAX_IO_BALANCE_ITERATIONS): # Failsafe to prevent infinite loops
         best_move = {'node': None, 'target_partition': -1, 'cost_improvement': -np.inf}
         
         # Find all nodes on the boundaries of partitions
