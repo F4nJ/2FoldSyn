@@ -172,7 +172,7 @@ def hybrid_partitioner(
 
     # Failsafe: Limit the number of I/O balancing iterations. One pass per node is a reasonable upper bound.
     MAX_IO_BALANCE_ITERATIONS = graph.number_of_nodes()
-    for iteration in range(MAX_IO_BALANCE_ITERATIONS): # Failsafe to prevent infinite loops
+    for iteration in range(MAX_IO_BALANCE_ITERATIONS):
         best_move = {'node': None, 'target_partition': -1, 'cost_improvement': -np.inf}
         
         # Find all nodes on the boundaries of partitions
